@@ -1,9 +1,0 @@
-CREATE DATABASE crud_db;
-
-use crud_db;
-
-CREATE TABLE funcionario (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    cargo VARCHAR(100) NOT NULL
-);

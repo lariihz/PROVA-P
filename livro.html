@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gerenciar Livros</title>
+  <style>
+  /* Reset básico para margens e box-sizing */
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f9fafb;
+    color: #333;
+    padding: 30px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  h1, h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+  }
+
+  form {
+    background: #fff;
+    padding: 25px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+    margin-bottom: 40px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 15px;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  input[type="text"],
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+
+  input[type="text"]:focus,
+  select:focus {
+    border-color: #0078d4;
+    outline: none;
+    background-color: #f0f8ff;
+  }
+
+  button {
+    background-color: #0078d4;
+    border: none;
+    color: white;
+    padding: 10px 22px;
+    margin-top: 10px;
+    margin-right: 10px;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    user-select: none;
+  }
+
+  button:hover {
+    background-color: #0078d4;
+  }
+
+  button[type="button"] {
+    background-color: #e74c3c;
+  }
+
+  button[type="button"]:hover {
+    background-color: #c0392b;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+  }
+
+  thead {
+    background-color: #0078d4;
+    color: white;
+  }
+
+  th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+
+  tbody tr:hover {
+    background-color: #f0f8ff;
+  }
+
+  /* Responsividade básica */
+  @media (max-width: 600px) {
+    form {
+      padding: 20px;
+    }
+
+    label {
+      font-size: 0.9rem;
+    }
+
+    button {
+      width: 100%;
+      margin: 8px 0;
+    }
+
+    table, thead, tbody, th, td, tr {
+      display: block;
+    }
+
+    thead tr {
+      display: none;
+    }
+
+    tbody tr {
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    tbody td {
+      padding: 8px 10px;
+      text-align: right;
+      position: relative;
+      padding-left: 50%;
+      border: none;
+      border-bottom: 1px solid #eee;
+    }
+
+    tbody td::before {
+      content: attr(data-label);
+      position: absolute;
+      left: 15px;
+      width: 45%;
+      padding-left: 10px;
+      font-weight: 600;
+      text-align: left;
+      white-space: nowrap;
+    }
+  }
+</style>
+
+<body>
+  <h1>Cadastro e Gerenciamento de Livros</h1>
+
+  <form id="formLivro">
+    <input type="hidden" id="id" /> <!-- usado para edição -->
+
+    <label for="bibliotecario">
+      Bibliotecário:
+      <select id="bibliotecario" required>
+        <option value="" disabled selected>Selecione um bibliotecário</option>
+      </select>
+    </label>
+
+    <label for="titulo">
+      Título:
+      <input type="text" id="titulo" required />
+    </label>
+
+    <label for="autor">
+      Autor:
+      <input type="text" id="autor" required />
+    </label>
+
+    <label for="genero">
+      Gênero:
+      <input type="text" id="genero" required />
+    </label>
+
+    <label for="status">
+      Status:
+      <select id="status" required>
+        <option value="" disabled selected>Selecione o status</option>
+        <option value="DISPONIVEL">Disponível</option>
+        <option value="EMPRESTADO">Emprestado</option>
+        <option value="RESERVADO">Reservado</option>
+      </select>
+    </label>
+
+    <button type="submit">Salvar Livro</button>
+    <button type="button" onclick="resetForm()">Cancelar</button>
+  </form>
+
+  <h2>Livros Cadastrados</h2>
+  <table id="tabelaLivros">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Autor</th>
+        <th>Gênero</th>
+        <th>Status</th>
+        <th>Bibliotecário</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</body>
+
+  </table>
+
+<script>
+  const apiBase = "http://localhost:9090/api";
+
+  // Carregar bibliotecarios no select
+  async function carregarBibliotecarios() {
+    try {
+      const res = await fetch(`${apiBase}/bibliotecarios`);
+      if (!res.ok) throw new Error("Erro ao carregar bibliotecários");
+      const bibliotecarios = await res.json();
+      const select = document.getElementById("bibliotecario");
+      bibliotecarios.forEach(b => {
+        const option = document.createElement("option");
+        option.value = b.id;
+        option.text = b.nome;
+        select.add(option);
+      });
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  // Carregar livros e exibir na tabela
+  async function carregarLivros() {
+    try {
+      const res = await fetch(`${apiBase}/livros`);
+      if (!res.ok) throw new Error("Erro ao carregar livros");
+      const livros = await res.json();
+
+      const tbody = document.querySelector("#tabelaLivros tbody");
+      tbody.innerHTML = ""; // limpa tabela
+
+      livros.forEach(l => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${l.id}</td>
+          <td>${l.titulo}</td>
+          <td>${l.autor}</td>
+          <td>${l.genero}</td>
+          <td>${l.status}</td>
+          <td>${l.bibliotecario?.nome || ""}</td>
+          <td>
+            <button onclick="editarLivro(${l.id})">Editar</button>
+            <button onclick="excluirLivro(${l.id})">Excluir</button>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  // Cadastrar ou editar livro
+  async function salvarLivro(event) {
+    event.preventDefault();
+
+    const id = document.getElementById("id").value;
+    const titulo = document.getElementById("titulo").value.trim();
+    const autor = document.getElementById("autor").value.trim();
+    const genero = document.getElementById("genero").value.trim();
+    const status = document.getElementById("status").value;
+    const bibliotecarioId = document.getElementById("bibliotecario").value;
+
+    if (!titulo || !autor || !genero || !status || !bibliotecarioId) {
+      alert("Preencha todos os campos!");
+      return;
+    }
+
+    const livroData = {
+      titulo,
+      autor,
+      genero,
+      status,
+      bibliotecario: { id: bibliotecarioId }
+    };
+
+    try {
+      let response;
+      if (id) {
+        // Editar livro
+        response = await fetch(`${apiBase}/livros/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(livroData)
+        });
+      } else {
+        // Cadastrar novo
+        response = await fetch(`${apiBase}/livros`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(livroData)
+        });
+      }
+
+      if (!response.ok) {
+        const errMsg = await response.text();
+        throw new Error(`Erro ao salvar livro: ${errMsg}`);
+      }
+
+      alert("Livro salvo com sucesso!");
+      resetForm();
+      carregarLivros();
+
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  // Preenche o formulário para editar
+  async function editarLivro(id) {
+    try {
+      const res = await fetch(`${apiBase}/livros/${id}`);
+      if (!res.ok) throw new Error("Erro ao carregar livro");
+      const l = await res.json();
+
+      document.getElementById("id").value = l.id;
+      document.getElementById("titulo").value = l.titulo;
+      document.getElementById("autor").value = l.autor;
+      document.getElementById("genero").value = l.genero;
+      document.getElementById("status").value = l.status;
+      document.getElementById("bibliotecario").value = l.bibliotecario.id;
+
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  // Excluir livro
+  async function excluirLivro(id) {
+    if (!confirm("Deseja realmente excluir este livro?")) return;
+    try {
+      const res = await fetch(`${apiBase}/livros/${id}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Erro ao excluir livro");
+      alert("Livro excluído com sucesso!");
+      carregarLivros();
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  // Reseta formulário para novo cadastro
+  function resetForm() {
+    document.getElementById("formLivro").reset();
+    document.getElementById("id").value = "";
+  }
+
+  // Inicialização
+  window.onload = () => {
+    carregarBibliotecarios();
+    carregarLivros();
+    document.getElementById("formLivro").addEventListener("submit", salvarLivro);
+  };
+</script>
+
+</body>
+</html>
